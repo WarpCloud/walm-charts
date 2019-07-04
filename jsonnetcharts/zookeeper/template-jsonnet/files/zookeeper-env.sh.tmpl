@@ -1,0 +1,9 @@
+export ZOOKEEPER_LOG_DIR=/var/transwarp/data/log
+
+export SERVER_JVMFLAGS="-Dcom.sun.management.jmxremote.port={{getv "/zookeeper/zookeeper.jmxremote.port"}} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.local.only=false"
+export SERVER_JVMFLAGS="-Dsun.net.inetaddr.ttl=60 -Dsun.net.inetaddr.negative.ttl=60 -Dzookeeper.refreshPeer=1 -Dzookeeper.log.dir=${ZOOKEEPER_LOG_DIR} -Dzookeeper.root.logger=INFO,CONSOLE,ROLLINGFILE $SERVER_JVMFLAGS"
+
+{{ if eq (getv "/security/auth_type") "kerberos" }}
+export SERVER_JVMFLAGS="-Djava.security.auth.login.config=/etc/zookeeper/conf/jaas.conf ${SERVER_JVMFLAGS}"
+export ZOOKEEPER_PRICIPAL={{ getv "/security/guardian_principal_user" "zookeeper" }}/{{ getv "/security/guardian_principal_host" "tos" }}@{{ getv "/security/guardian_client_config/realm" "TDH" }}
+{{ end }}

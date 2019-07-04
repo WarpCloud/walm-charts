@@ -1,0 +1,29 @@
+broker.id={{ getenv "BROKER_ID" }}
+
+{{- range gets "/server_properties/*" }}
+{{base .Key}}={{.Value}}
+{{- end }}
+
+{{- $KAFKA_ZK_ADDRESS := split (getv "/zookeeper_client_config/zookeeper_addresses" "") "," }}
+zookeeper.connect={{join $KAFKA_ZK_ADDRESS (printf ":%s," (getv "/zookeeper_client_config/zookeeper_port" "2181"))}}:{{(getv "/zookeeper_client_config/zookeeper_port" "2181")}}
+
+{{- if eq (getv "/security/auth_type") "kerberos" }}
+listeners=SASL_PLAINTEXT://0.0.0.0:9092
+advertised.listeners=SASL_PLAINTEXT://{{getenv "KAFKA_HOSTNAME" "localhost"}}:9092
+security.inter.broker.protocol=SASL_PLAINTEXT
+sasl.mechanism.inter.broker.protocol=GSSAPI
+sasl.enabled.mechanisms=GSSAPI
+
+sasl.kerberos.service.name={{ getv "/security/guardian_principal_user" "kafka" }}
+authorizer.class.name=io.transwarp.guardian.plugins.kafka.GuardianAclAuthorizer
+super.users=User:{{ getv "/security/guardian_principal_user" "tos" }}
+zookeeper.set.acl=true
+sasl.kerberos.service.principal.instance={{ getv "/security/guardian_principal_host" "kafka" }}
+sasl.kerberos.principal.to.local.rules=RULE:[1:$1@$0](^.*@.*$)s/^(.*)@.*$/$1/g,RULE:[2:$1@$0](^.*@.*$)s/^(.*)@.*$/$1/g,DEFAULT
+{{- else }}
+listeners=PLAINTEXT://0.0.0.0:9092
+advertised.listeners=PLAINTEXT://{{getenv "KAFKA_HOSTNAME" "localhost"}}:9092
+security.inter.broker.protocol=PLAINTEXT
+sasl.mechanism.inter.broker.protocol=PLAIN
+sasl.enabled.mechanisms=PLAIN
+{{- end }}

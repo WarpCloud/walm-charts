@@ -1,0 +1,6 @@
+[[template]]
+src = "ladder-site.properties.tmpl"
+dest = "/etc/ladder/conf/ladder-site.properties"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]

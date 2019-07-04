@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-conf
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ template "walm.fullname" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+data:
+{{- range $key, $val := .Values.configmap }}
+  {{ $key }}: |-
+{{ $val | indent 4}}
+{{- end }}
+    {{- if .Values.kafkaConfig }}
+    kafkaConfig:
+{{ toYaml .Values.kafkaConfig | indent 6 }}      
+    {{- end }}
+    {{- if .Values.redisConfig.enabled }}
+    redisConfig:
+      addr: {{ .Values.redisConfig.host }}:{{ .Values.redisConfig.port }}
+      db: {{ .Values.redisConfig.db }}
+      password: {{ .Values.redisConfig.password }}
+    taskConfig:
+      broker: redis://{{ .Values.redisConfig.password }}@{{ .Values.redisConfig.host }}:{{ .Values.redisConfig.port }}
+      default_queue: {{ .Values.redisConfig.default_queue }}
+      result_backend: redis://{{ .Values.redisConfig.password }}@{{ .Values.redisConfig.host }}:{{ .Values.redisConfig.port }}
+      results_expire_in:  {{ .Values.redisConfig.results_expire_in }}
+    {{- end }}

@@ -1,0 +1,72 @@
+image:
+  repository: docker.io/corndai1997/walm
+  tag: dev
+  pullPolicy: Always
+resources:
+  limits:
+    cpu: "4"
+    memory: 4Gi
+  requests:
+    cpu: "1"
+    memory: 2Gi
+
+annotations:
+  cni.networks: overlay
+
+dnsPolicy: ClusterFirst
+priorityClassName: low-priority
+restartPolicy: Always
+schedulerName: default-scheduler
+
+topologyKey: kubernetes.io/hostname
+securityContext: {}
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: master
+          operator: Exists
+
+tolerations:
+  - key: master
+    operator: Exists
+
+svc:
+  nodePort: 31607
+
+configmap:
+  conf.yaml: |-
+    debug: true
+    jsonnetConfig:
+      commonTemplateFilesPath: "/opt/ksonnet-lib"
+    kubeConfig: {}
+    repoList:
+    - name: stable
+      url: http://10.10.10.2:18181/
+    serverConfig:
+      port: 9001
+      readTimeout: 0
+      tls: false
+      tlsCACert: ''
+      tlsCert: ''
+      tlsKey: ''
+      tlsVerify: false
+      writeTimeout: 0
+
+kafkaConfig:
+  enable: false
+  brokers: []
+
+redisConfig:
+  ##
+  ## Use the redis chart dependency.
+  ## Set to false if bringing your own redis.
+  enabled: true
+  host: redis-master.appmarket.svc
+  password: "123456"
+  port: 6379
+  db: 0
+  default_queue: machinery_tasks
+  results_expire_in: 360000

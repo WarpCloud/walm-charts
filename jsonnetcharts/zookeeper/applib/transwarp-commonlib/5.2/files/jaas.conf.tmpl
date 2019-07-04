@@ -1,0 +1,27 @@
+KafkaServer {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  keyTab="/etc/keytabs/keytab"
+  storeKey=true
+  useTicketCache=false
+  principal="{{ getv "/kafka_client_config/kafka_principal" }}";
+};
+
+KafkaClient {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  keyTab="/etc/keytabs/keytab"
+  storeKey=true
+  useTicketCache=false
+  principal="{{ getv "/kafka_client_config/kafka_principal" }}";
+};
+
+// Zookeeper client authentication
+Client {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  storeKey=true
+  useTicketCache=false
+  keyTab="/etc/keytabs/keytab"
+  principal="{{ getv "/kafka_client_config/kafka_principal" }}";
+};

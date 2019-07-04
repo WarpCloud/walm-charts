@@ -1,0 +1,9 @@
+appVersion: "6.1"
+description: ZooKeeper是一个为分布式应用提供一致性服务的软件，提供的功能包括：配置维护、域名服务、分布式同步、组服务等。
+home: https://transwarp.io/
+keywords:
+- transwarp
+name: zookeeper
+sources:
+- https://transwarp.io/
+version: 6.1.0

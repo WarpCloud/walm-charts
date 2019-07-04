@@ -1,0 +1,1 @@
+export JAVA_OPTS="$JAVA_OPTS -Xmx{{ div (mul (atoi (getenv "TOS_MEM_LIMIT")) 8) 10 }} -Xms{{ div (mul (atoi (getenv "TOS_MEM_LIMIT")) 8) 10 }} -XX:ParallelGCThreads={{getenv "TOS_CPU_LIMIT" "1"}}"

@@ -1,0 +1,11 @@
+{{- if eq (getv "/security/auth_type") "kerberos" -}}
+bootstrap.servers=${HOSTNAME}:9092
+sasl.mechanism=GSSAPI
+security.protocol=SASL_PLAINTEXT
+sasl.kerberos.service.name={{ getv "/security/guardian_principal_user" "kafka" }}
+sasl.kerberos.service.principal.instance={{ getv "/security/guardian_principal_host" "tos" }}
+{{- else }}
+bootstrap.servers=${HOSTNAME}:9092
+security.protocol=PLAINTEXT
+sasl.mechanism=PLAIN
+{{- end }}

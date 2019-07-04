@@ -1,0 +1,72 @@
+friendlyName: Zookeeper
+
+categories:
+- Transwarp Hub
+
+roles:
+- name: zookeeper
+  description: "zookeeper"
+  type: "container"
+  baseConfig:
+    image:
+      mapKey: appConfig.zookeeper.image
+      description: "镜像"
+      type: string
+      required: true
+    priority:
+      mapKey: appConfig.zookeeper.priority
+      description: "优先级"
+      type: string
+      required: true
+    replicas:
+      mapKey: appConfig.zookeeper.replicas
+      description: "副本个数"
+      type: number
+      required: true
+    env:
+      mapKey: appConfig.zookeeper.env_list
+      description: "额外环境变量"
+      type: envType
+      required: true
+    useHostNetwork:
+      mapKey: appConfig.zookeeper.use_host_network
+      description: "是否使用主机网络"
+      type: boolean
+      required: false
+  resources:
+    limitsMemory: 
+      mapkey: appConfig.zookeeper.resources.memory_limit
+    limitsCpu:
+      mapkey: appConfig.zookeeper.resources.cpu_limit
+    limitsGpu: 
+      mapkey: appConfig.zookeeper.resources.gpu_limit
+    requestsMemory:
+      mapkey: appConfig.zookeeper.resources.memory_request
+    requestsCpu:
+      mapkey: appConfig.zookeeper.resources.cpu_request
+    requestsGpu:
+      mapkey: appConfig.zookeeper.resources.gpu_request
+    storageResources:
+    - name: data
+      mapKey: appConfig.zookeeper.resources.storage.data
+      description: "zookeeper数据目录配置"
+      type: storagePVCType
+  healthChecks:
+    readinessProbe:
+      defined: false
+      enable: false
+    livenessProbe:
+      defined: false
+      enable: false
+
+params:
+- name: zoo_cfg
+  mapKey: advanceConfig.zoo_cfg
+  description: "zoo.cfg配置键值对"
+  type: kvPair
+  required: true
+- name: zookeeper
+  mapKey: advanceConfig.zookeeper
+  description: "zookeeper高级配置"
+  type: kvPair
+  required: true

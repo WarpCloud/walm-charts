@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+{{- range gets "/yarn_client_config/yarn_site/*" }}
+  <property>
+    <name>{{base .Key}}</name>
+    <value>{{.Value}}</value>
+  </property>
+{{- end }}
+
+{{- $YARN_RMSERVERS := split (getv "/yarn_client_config/yarn_resourcemanager_address" "") "," }}
+{{- if le (len $YARN_RMSERVERS) 1 }}
+  <property>
+    <name>yarn.resourcemanager.address</name>
+    <value>{{ getenv "YARNRM_ADDRESSES" }}:8032</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.scheduler.address</name>
+    <value>{{ getenv "YARNRM_ADDRESSES" }}:8030</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.resource-tracker.address</name>
+    <value>{{ getenv "YARNRM_ADDRESSES" }}:8031</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.webapp.address</name>
+    <value>{{ getenv "YARNRM_ADDRESSES" }}:8088</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.admin.address</name>
+    <value>{{ getenv "YARNRM_ADDRESSES" }}:8033</value>
+  </property>
+{{- else }}
+{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 := (index $YARN_RMSERVERS 0) }}
+{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 := (index $YARN_RMSERVERS 1) }}
+  <!-- ResourceManager HA configs -->
+  <property>
+    <name>yarn.resourcemanager.ha.enabled</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.ha.automatic-failover.embedded</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.ha.rm-ids</name>
+    <value>rm1,rm2</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.address.rm1</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 }}:8032</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.address.rm2</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 }}:8032</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.scheduler.address.rm1</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 }}:8030</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.scheduler.address.rm2</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 }}:8030</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.resource-tracker.address.rm1</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 }}:8031</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.resource-tracker.address.rm2</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 }}:8031</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.webapp.address.rm1</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 }}:8088</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.webapp.address.rm2</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 }}:8088</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.admin.address.rm1</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM1 }}:8033</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.admin.address.rm2</name>
+    <value>{{ $YARN_RESOURCEMANAGER_ADDRESS_RM2 }}:8033</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.recovery.enabled</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.store.class</name>
+    <value>org.apache.hadoop.yarn.server.resourcemanager.recovery.ZKRMStateStore</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.principal</name>
+    <value>{{ getv "/yarn_client_config/yarn_principal" "yarn" }}</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.principal.pattern</name>
+    <value>*</value>
+  </property>
+{{- end }}
+
+</configuration>

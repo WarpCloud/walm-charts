@@ -1,0 +1,20 @@
+# the directory where the snapshot is stored.
+dataDir=/var/transwarp/data
+
+# the port at which the clients will connect
+clientPort={{ getv "/zookeeper/zookeeper.client.port" }}
+
+{{- range $index, $_ := seq 0 (sub (atoi (getenv "QUORUM_SIZE")) 1) }}
+server.{{ $index }}={{ getenv "SERVICE_NAME" }}-{{ $index }}.{{ getenv "SERVICE_NAME" }}-hl.{{ getenv "SERVICE_NAMESPACE" }}.svc:{{ getv "/zookeeper/zookeeper.peer.communicate.port" }}:{{ getv "/zookeeper/zookeeper.leader.elect.port" }}
+{{- end }}
+
+{{- if eq (getv "/security/auth_type") "kerberos" }}
+authProvider.1=org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+jaasLoginRenew=3600000
+kerberos.removeHostFromPrincipal=true
+kerberos.removeRealmFromPrincipal=true
+{{- end }}
+
+{{- range gets "/zoo_cfg/*" }}
+{{base .Key}}={{.Value}}
+{{- end }}

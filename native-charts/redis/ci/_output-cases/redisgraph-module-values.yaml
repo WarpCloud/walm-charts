@@ -1,0 +1,258 @@
+
+---
+# Source: redis/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redisgraph-module-values.yaml
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "redisgraph-module-values.yaml"
+    heritage: "Helm"
+type: Opaque
+data:
+  redis-password: "MTIzNDU2"
+---
+# Source: redis/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    heritage: Helm
+    release: redisgraph-module-values.yaml
+  name: redisgraph-module-values.yaml
+data:
+  redis.conf: |-
+    # User-supplied configuration:
+    # maxmemory-policy volatile-lru
+  master.conf: |-
+    dir /data
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+  replica.conf: |-
+    dir /data
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+---
+# Source: redis/templates/health-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    heritage: Helm
+    release: redisgraph-module-values.yaml
+  name: redisgraph-module-values.yaml-health
+data:
+  ping_local.sh: |-
+    response=$(
+      timeout -s 9 $1 \
+      redis-cli \
+        -a $REDIS_PASSWORD \
+        -h localhost \
+        -p $REDIS_PORT \
+        ping
+    )
+    if [ "$response" != "PONG" ]; then
+      echo "$response"
+      exit 1
+    fi
+  ping_master.sh: |-
+    response=$(
+      timeout -s 9 $1 \
+      redis-cli \
+        -a $REDIS_MASTER_PASSWORD \
+        -h $REDIS_MASTER_HOST \
+        -p $REDIS_MASTER_PORT_NUMBER \
+        ping
+    )
+    if [ "$response" != "PONG" ]; then
+      echo "$response"
+      exit 1
+    fi
+  ping_local_and_master.sh: |-
+    script_dir="$(dirname "$0")"
+    exit_status=0
+    "$script_dir/ping_local.sh" $1 || exit_status=$?
+    "$script_dir/ping_master.sh" $1 || exit_status=$?
+    exit $exit_status
+---
+# Source: redis/templates/redis-master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redisgraph-module-values.yaml-master
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "redisgraph-module-values.yaml"
+    heritage: "Helm"
+spec:
+  type: NodePort
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app: redis
+    release: "redisgraph-module-values.yaml"
+    role: master
+---
+# Source: redis/templates/redis-master-statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: redisgraph-module-values.yaml-master
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "redisgraph-module-values.yaml"
+    heritage: "Helm"
+spec:
+  selector:
+    matchLabels:
+      release: "redisgraph-module-values.yaml"
+      role: master
+      app: redis
+  serviceName: redisgraph-module-values.yaml-master
+  template:
+    metadata:
+      labels:
+        release: "redisgraph-module-values.yaml"
+        chart: redis-6.1.1
+        role: master
+        app: redis
+      annotations:
+        checksum/health: 99b1c789972e30b22ff526a70e737aaa540c100fb5c6a178cb93bfa11087d420
+        checksum/configmap: 6de9b55b937dd73d0d9a17e0cebae7c4010c102e2d385a639e5244ad4a80190f
+        checksum/secret: 943fdb8f97231bae1a1efe710a2e717bf76b270856fd6688823866fbf41c5704
+    spec:
+      securityContext:
+        fsGroup: 1001
+      hostNetwork: false
+      serviceAccountName: "default"
+      containers:
+      - name: redisgraph-module-values.yaml
+        image: "transwarp/bitnami/redis:4.0.12"
+        imagePullPolicy: "Always"
+        securityContext:
+          runAsUser: 1001
+        command:
+        - /bin/bash
+        - -c
+        - |
+          if [[ -n $REDIS_PASSWORD_FILE ]]; then
+            password_aux=`cat ${REDIS_PASSWORD_FILE}`
+            export REDIS_PASSWORD=$password_aux
+          fi
+          ARGS=("--port" "${REDIS_PORT}")
+          ARGS+=("--requirepass" "${REDIS_PASSWORD}")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/redis.conf")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/master.conf")
+          redis-server ${ARGS[@]}
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: master
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redisgraph-module-values.yaml
+              key: redis-password
+        - name: REDIS_PORT
+          value: "6379"
+        ports:
+        - name: redis
+          containerPort: 6379
+        livenessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+        volumeMounts:
+        - name: health
+          mountPath: /health
+        - name: redis-data
+          mountPath: /data
+          subPath: 
+        - name: config
+          mountPath: /opt/bitnami/redis/etc
+      volumes:
+      - name: health
+        configMap:
+          name: redisgraph-module-values.yaml-health
+          defaultMode: 0755
+      - name: config
+        configMap:
+          name: redisgraph-module-values.yaml
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: "redis"
+          component: "master"
+          release: "redisgraph-module-values.yaml"
+          heritage: "Helm"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+        storageClassName: "silver"
+  updateStrategy:
+    type: RollingUpdate
+---
+# Source: redis/autogen-releaseconfig.json.transwarp-jsonnet.yaml
+apiVersion: apiextensions.transwarp.io/v1beta1
+kind: ReleaseConfig
+metadata:
+  creationTimestamp: null
+  labels:
+    auto-gen: "true"
+  name: redisgraph-module-values.yaml
+  namespace: ci-test
+spec:
+  chartAppVersion: 4.0.12
+  chartImage: ""
+  chartName: redis
+  chartVersion: 6.1.1
+  configValues:
+    image:
+      registry: docker.io
+      repository: redislabs/redisgraph
+      tag: 1.0.0
+    master:
+      command: redis-server
+  dependencies: {}
+  dependenciesConfigValues: {}
+  outputConfig: {}
+  repo: ""
+status: {}

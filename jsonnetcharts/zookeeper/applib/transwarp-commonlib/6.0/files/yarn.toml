@@ -1,0 +1,6 @@
+[[template]]
+src = "yarn-site.xml.tmpl"
+dest = "/etc/hadoop/conf/yarn-site.xml"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]

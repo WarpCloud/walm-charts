@@ -1,0 +1,6 @@
+[[template]]
+src = "hbase-site.xml.tmpl"
+dest = "/etc/hyperbase/conf/hbase-site.xml"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]

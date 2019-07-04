@@ -1,0 +1,58 @@
+friendlyName: Kafka
+
+categories:
+- 开发工具
+
+dependencies:
+- name: zookeeper
+  type: single
+  chartName: zookeeper
+  minVersion: "6.0"
+  maxVersion: "6.2"
+  dependencyOptional: true
+  aliasConfigVar: ZOOKEEPER_CLIENT_CONFIG
+
+roles:
+- name: kafka
+  description: "kafka"
+  type: "container"
+  baseConfig:
+    image:
+      mapKey: appConfig.kafka.image
+      description: "镜像"
+      type: string
+      required: true
+    replicas:
+      mapKey: appConfig.kafka.replicas
+      description: "副本个数"
+      type: number
+      required: true
+  resources:
+    limitsMemory: 
+      mapkey: appConfig.kafka.resources.memory_limit
+    limitsCpu:
+      mapkey: appConfig.kafka.resources.cpu_limit
+    limitsGpu: 
+      mapkey: appConfig.gitlkafkaab.resources.gpu_limit
+    requestsMemory:
+      mapkey: appConfig.kafka.resources.memory_request
+    requestsCpu:
+      mapkey: appConfig.gitlab.resources.cpu_request
+    requestsGpu:
+      mapkey: appConfig.kafka.resources.gpu_request
+    storageResources:
+    - name: data
+      mapKey: appConfig.kafka.resources.storage.data
+      description: "kafka 数据目录配置"
+      type: storagePVCType
+    - name: log
+      mapKey: appConfig.kafka.resources.storage.log
+      description: "kafka 日志目录配置"
+      type: storagePVCType
+  healthChecks:
+    readinessProbe:
+      defined: false
+      enable: false
+    livenessProbe:
+      defined: false
+      enable: false

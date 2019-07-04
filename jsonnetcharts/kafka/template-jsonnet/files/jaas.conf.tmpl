@@ -1,0 +1,27 @@
+{{- if eq (getv "/security/auth_type") "kerberos" }}
+KafkaServer {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  keyTab="/etc/keytabs/keytab"
+  storeKey=true
+  useTicketCache=false
+  principal="{{ getv "/security/guardian_principal_user" "kafka" }}/{{ getv "/security/guardian_principal_host" "tos" }}@{{ getv "/security/guardian_client_config/realm" "TDH" }}";
+};
+KafkaClient {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  keyTab="/etc/keytabs/keytab"
+  storeKey=true
+  useTicketCache=false
+  principal="{{ getv "/security/guardian_principal_user" "kafka" }}/{{ getv "/security/guardian_principal_host" "tos" }}@{{ getv "/security/guardian_client_config/realm" "TDH" }}";
+};
+// Zookeeper client authentication
+Client {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  storeKey=true
+  useTicketCache=false
+  keyTab="/etc/keytabs/keytab"
+  principal="{{ getv "/security/guardian_principal_user" "kafka" }}/{{ getv "/security/guardian_principal_host" "tos" }}@{{ getv "/security/guardian_client_config/realm" "TDH" }}";
+};
+{{- end }}

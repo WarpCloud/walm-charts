@@ -1,0 +1,9 @@
+appVersion: "6.1"
+description: 消息中间件服务
+home: https://transwarp.io/
+keywords:
+- transwarp
+name: kafka
+sources:
+- https://transwarp.io/
+version: 6.1.0

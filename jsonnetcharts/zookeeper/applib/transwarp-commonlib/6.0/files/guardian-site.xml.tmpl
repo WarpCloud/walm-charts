@@ -1,0 +1,29 @@
+{{- if eq (getv "/security/guardian_plugin_enable" "false") "true" -}}
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+{{- range gets "/security/guardian_client_config/guardian_site/*" }}
+    <property>
+        <name>{{base .Key}}</name>
+        <value>{{.Value}}</value>
+    </property>
+{{- end }}
+
+
+{{- if eq (getv "/security/cas_client_config/cas_plugin_enable" "false") "true" }}
+    <property>
+        <name>guardian.server.cas.authentication.enabled</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>guardian.server.cas.server.url.prefix</name>
+        <value>{{getv "/security/cas_client_config/cas/cas_server_external_address" "localhost:8393"}}{{getv "/security/cas_client_config/cas/cas_server_context_path" "/cas"}}</value>
+    </property>
+    <property>
+        <name>guardian.server.cas.server.login.url</name>
+        <value>{{getv "/security/cas_client_config/cas/cas_server_external_address" "localhost:8393"}}{{getv "/security/cas_client_config/cas/cas_server_context_path" "/cas"}}/login</value>
+    </property>
+{{- end }}
+
+</configuration>
+{{- end -}}

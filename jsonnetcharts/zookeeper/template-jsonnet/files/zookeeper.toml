@@ -1,0 +1,34 @@
+[[template]]
+src = "zoo.cfg.tmpl"
+dest = "/etc/zookeeper/conf/zoo.cfg"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "jaas.conf.tmpl"
+dest = "/etc/zookeeper/conf/jaas.conf"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "log4j.properties.raw"
+dest = "/etc/zookeeper/conf/log4j.properties"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "zookeeper-env.sh.tmpl"
+dest = "/etc/zookeeper/conf/zookeeper-env.sh"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "myid.tmpl"
+dest = "/var/transwarp/data/myid"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]

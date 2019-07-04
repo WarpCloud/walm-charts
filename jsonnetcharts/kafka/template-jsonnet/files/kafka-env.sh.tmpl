@@ -1,0 +1,9 @@
+export JAVA_OPTS="-Dsun.net.inetaddr.ttl=60 -Dsun.net.inetaddr.negative.ttl=60 ${JAVA_OPTS}"
+export KAFKA_SERVER_MEMORY={{ getv "/java_opts/memory_opts/kafka_memory" "1024" }}m
+
+{{- if eq (getv "/security/auth_type") "kerberos" }}
+export JAVA_OPTS="-Djava.security.krb5.conf=/etc/krb5.conf 
+                        -Djava.security.auth.login.config=/etc/kafka/conf/jaas.conf \
+                        -Dzookeeper.server.principal={{ getv "/zookeeper_client_config/zookeeper_principal" "" }} \
+                        ${JAVA_OPTS}"
+{{- end }}

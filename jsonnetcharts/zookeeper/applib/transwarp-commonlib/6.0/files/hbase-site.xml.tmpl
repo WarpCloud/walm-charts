@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+
+{{- range gets "/hyperbase_client_config/hbase_site/*" }}
+  <property>
+    <name>{{base .Key}}</name>
+    <value>{{.Value}}</value>
+  </property>
+{{- end }}
+
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>{{ getv "/hyperbase_client_config/zookeeper_client_config/zookeeper_addresses" "" }}</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.clientPort</name>
+    <value>{{ getv "/hyperbase_client_config/zookeeper_client_config/zookeeper_port" "" }}</value>
+  </property>
+
+  <property>
+    <name>hbase.zookeeper.peerport</name>
+    <value>2888</value>
+  </property>
+
+  <property>
+    <name>hbase.zookeeper.leaderport</name>
+    <value>3888</value>
+  </property>
+
+{{- if eq (getv "/hyperbase_client_config/auth_type" "" ) "kerberos" }}
+  <property>
+    <name>hbase.security.authentication</name>
+    <value>kerberos</value>
+  </property>
+  <property>
+    <name>hbase.rpc.engine</name>
+    <value>org.apache.hadoop.hbase.ipc.SecureRpcEngine</value>
+  </property>
+  <property>
+    <name>hbase.security.authorization</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hbase.regionserver.kerberos.principal.pattern</name>
+    <value>*</value>
+  </property>
+  <property>
+    <name>hbase.regionserver.keytab.file</name>
+    <value>/etc/keytabs/keytab</value>
+  </property>
+  <property>
+    <name>hbase.master.keytab.file</name>
+    <value>/etc/keytabs/keytab</value>
+  </property>
+  <property>
+    <name>hbase.master.kerberos.principal</name>
+    <value>hbase/{{ getv "/hyperbase_client_config/security/guardian_principal_host" "" }}@{{ getv "/hyperbase_client_config/security/guardian_client_config/realm" "TDH" }}</value>
+  </property>
+  <property>
+    <name>hbase.regionserver.kerberos.principal</name>
+    <value>hbase/{{ getv "/hyperbase_client_config/security/guardian_principal_host" "" }}@{{ getv "/hyperbase_client_config/security/guardian_client_config/realm" "TDH" }}</value>
+  </property>
+{{- else }}
+  <property>
+    <name>hbase.security.authentication</name>
+    <value>simple</value>
+  </property>
+  <property>
+    <name>hbase.security.authorization</name>
+    <value>false</value>
+  </property>
+{{- end }}
+
+
+{{- if gt (len (getv "/elasticsearch_client_config/elasticsearch_address" "")) 0 -}}
+  <property>
+    <name>discovery.zen.ping.unicast.hosts</name>
+    <value>{{ getv "/elasticsearch_client_config/elasticsearch_address" "" }}</value>
+  </property>
+  <property>
+    <name>discovery.zen.minimum_master_nodes</name>
+    <value>1</value>
+  </property>
+  <property>
+    <name>cluster.name</name>
+    <value>elastic</value>
+  </property>
+{{- end }}
+
+  <property>
+      <name>hbase.rootdir</name>
+      <value>hdfs://{{ getv "/hdfs_client_config/hdfs_confd_config/hdfs_site/dfs.nameservices" "" }}{{ getv "/hyperbase_client_config/hbase_site/zookeeper.znode.parent" "" }}</value>
+  </property>
+
+</configuration>

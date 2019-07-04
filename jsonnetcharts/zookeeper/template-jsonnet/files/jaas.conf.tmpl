@@ -1,0 +1,15 @@
+{{- if eq (getv "/security/auth_type") "kerberos" }}
+Server {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=true
+  keyTab="/etc/keytabs/keytab"
+  storeKey=true
+  useTicketCache=false
+  principal="{{ getv "/security/guardian_principal_user" "zookeeper" }}/{{ getv "/security/guardian_principal_host" "tos" }}@{{ getv "/security/guardian_client_config/realm" "TDH" }}";
+};
+Client {
+  com.sun.security.auth.module.Krb5LoginModule required
+  useKeyTab=false
+  useTicketCache=true;
+};
+{{- end }}

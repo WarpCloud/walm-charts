@@ -1,0 +1,632 @@
+
+---
+# Source: redis/templates/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: production-values.yaml-redis
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+type: Opaque
+data:
+  redis-password: "MWJnSHFzdGVMQg=="
+---
+# Source: redis/templates/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    heritage: Helm
+    release: production-values.yaml
+  name: production-values.yaml-redis
+data:
+  redis.conf: |-
+    # User-supplied configuration:
+    # maxmemory-policy volatile-lru
+  master.conf: |-
+    dir /bitnami/redis/data
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+  replica.conf: |-
+    dir /data
+    rename-command FLUSHDB ""
+    rename-command FLUSHALL ""
+---
+# Source: redis/templates/health-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    heritage: Helm
+    release: production-values.yaml
+  name: production-values.yaml-redis-health
+data:
+  ping_local.sh: |-
+    response=$(
+      timeout -s 9 $1 \
+      redis-cli \
+        -a $REDIS_PASSWORD \
+        -h localhost \
+        -p $REDIS_PORT \
+        ping
+    )
+    if [ "$response" != "PONG" ]; then
+      echo "$response"
+      exit 1
+    fi
+  ping_master.sh: |-
+    response=$(
+      timeout -s 9 $1 \
+      redis-cli \
+        -a $REDIS_MASTER_PASSWORD \
+        -h $REDIS_MASTER_HOST \
+        -p $REDIS_MASTER_PORT_NUMBER \
+        ping
+    )
+    if [ "$response" != "PONG" ]; then
+      echo "$response"
+      exit 1
+    fi
+  ping_local_and_master.sh: |-
+    script_dir="$(dirname "$0")"
+    exit_status=0
+    "$script_dir/ping_local.sh" $1 || exit_status=$?
+    "$script_dir/ping_master.sh" $1 || exit_status=$?
+    exit $exit_status
+---
+# Source: redis/templates/metrics-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: production-values.yaml-redis-metrics
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+  annotations:
+    prometheus.io/port: "9121"
+    prometheus.io/scrape: "true"
+spec:
+  type: ClusterIP
+  ports:
+  - name: metrics
+    port: 9121
+    targetPort: metrics
+  selector:
+    app: redis
+    release: production-values.yaml
+    role: metrics
+---
+# Source: redis/templates/redis-master-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: production-values.yaml-redis-master
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app: redis
+    release: "production-values.yaml"
+    role: master
+---
+# Source: redis/templates/redis-slave-svc.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: production-values.yaml-redis-slave
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  type: ClusterIP
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app: redis
+    release: "production-values.yaml"
+    role: slave
+---
+# Source: redis/templates/metrics-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: production-values.yaml-redis-metrics
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  selector:
+    matchLabels:
+        release: "production-values.yaml"
+        role: metrics
+        app: redis
+  template:
+    metadata:
+      labels:
+        release: "production-values.yaml"
+        chart: redis-6.1.1
+        role: metrics
+        app: redis
+      annotations:
+        checksum/secret: af94ec98586c240c7af8a8b99f712bf3df302349eb8043cdcade5e441abe28c5
+    spec:
+      serviceAccountName: "default"
+      containers:
+      - name: metrics
+        image: docker.io/oliver006/redis_exporter:v0.28.0
+        imagePullPolicy: "IfNotPresent"
+        args:
+        env:
+        - name: REDIS_ADDR
+          value: "production-values.yaml-redis-master:6379,production-values.yaml-redis-slave:6379"
+        - name: REDIS_ALIAS
+          value: production-values.yaml-redis
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: production-values.yaml-redis
+              key: redis-password
+        volumeMounts:
+        ports:
+        - name: metrics
+          containerPort: 9121
+        resources:
+          null
+      volumes:
+---
+# Source: redis/templates/redis-slave-deployment.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: production-values.yaml-redis-slave
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+        release: "production-values.yaml"
+        role: slave
+        app: redis
+  template:
+    metadata:
+      labels:
+        release: "production-values.yaml"
+        chart: redis-6.1.1
+        role: slave
+        app: redis
+      annotations:
+        checksum/health: 43d10affb700bf21ae586bde5a6984df5d83874c6902a1ee29d0a9e4b5c39989
+        checksum/configmap: 18b1943c50c12295ca75f6421af51ef34083e41f373dff8bbfe458c15784be60
+        checksum/secret: a132a6a50224049ffa965466c38156009a384b279c23ece176a121363c26608b
+    spec:
+      securityContext:
+        fsGroup: 1001
+      serviceAccountName: "default"
+      containers:
+      - name: production-values.yaml-redis
+        image: transwarp/bitnami/redis:4.0.12
+        imagePullPolicy: "IfNotPresent"
+        securityContext:
+          runAsUser: 1001
+        command:
+        - /bin/bash
+        - -c
+        - |
+          if [[ -n $REDIS_PASSWORD_FILE ]]; then
+            password_aux=`cat ${REDIS_PASSWORD_FILE}`
+            export REDIS_PASSWORD=$password_aux
+          fi
+          if [[ -n $REDIS_MASTER_PASSWORD_FILE ]]; then
+            password_aux=`cat ${REDIS_MASTER_PASSWORD_FILE}`
+            export REDIS_MASTER_PASSWORD=$password_aux
+          fi
+          ARGS=("--port" "${REDIS_PORT}")
+          ARGS+=("--requirepass" "${REDIS_PASSWORD}")
+          ARGS+=("--slaveof" "${REDIS_MASTER_HOST}" "${REDIS_MASTER_PORT_NUMBER}")
+          ARGS+=("--masterauth" "${REDIS_MASTER_PASSWORD}")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/redis.conf")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/replica.conf")
+          /run.sh "${ARGS[@]}"
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: slave
+        - name: REDIS_MASTER_HOST
+          value: production-values.yaml-redis-master
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_MASTER_PORT_NUMBER
+          value: "6379"
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: production-values.yaml-redis
+              key: redis-password
+        - name: REDIS_MASTER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: production-values.yaml-redis
+              key: redis-password
+        ports:
+        - name: redis
+          containerPort: 6379        
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local_and_master.sh 5        
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local_and_master.sh 1
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+        volumeMounts:
+        - name: health
+          mountPath: /health
+        - name: redis-data
+          mountPath: /data
+        - name: config
+          mountPath: /opt/bitnami/redis/etc
+      initContainers:
+      - name: init-sysctl
+        image: docker.io/bitnami/minideb:latest
+        volumeMounts:
+        - name: host-sys
+          mountPath: /host-sys
+        command:
+          - /bin/sh
+          - -c
+          - echo "sample command"
+        securityContext:
+          privileged: true
+          runAsUser: 0
+      volumes:
+      - name: health
+        configMap:
+          name: production-values.yaml-redis-health
+          defaultMode: 0755
+      - name: config
+        configMap:
+          name: production-values.yaml-redis
+      - name: redis-data
+        emptyDir: {}
+      - name: host-sys
+        hostPath:
+          path: /sys
+---
+# Source: redis/templates/redis-master-statefulset.yaml
+apiVersion: apps/v1beta2
+kind: StatefulSet
+metadata:
+  name: production-values.yaml-redis-master
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  selector:
+    matchLabels:
+      release: "production-values.yaml"
+      role: master
+      app: redis
+  serviceName: production-values.yaml-redis-master
+  template:
+    metadata:
+      labels:
+        release: "production-values.yaml"
+        chart: redis-6.1.1
+        role: master
+        app: redis
+      annotations:
+        checksum/health: 43d10affb700bf21ae586bde5a6984df5d83874c6902a1ee29d0a9e4b5c39989
+        checksum/configmap: 18b1943c50c12295ca75f6421af51ef34083e41f373dff8bbfe458c15784be60
+        checksum/secret: 7a08a0f126306095c6d26da2614a438fdd389226acf93feb9155d3bdf4eb0c69
+    spec:
+      securityContext:
+        fsGroup: 1001
+      hostNetwork: false
+      serviceAccountName: "default"
+      containers:
+      - name: production-values.yaml-redis
+        image: "transwarp/bitnami/redis:4.0.12"
+        imagePullPolicy: "IfNotPresent"
+        securityContext:
+          runAsUser: 1001
+        command:
+        - /bin/bash
+        - -c
+        - |
+          if [[ -n $REDIS_PASSWORD_FILE ]]; then
+            password_aux=`cat ${REDIS_PASSWORD_FILE}`
+            export REDIS_PASSWORD=$password_aux
+          fi
+          ARGS=("--port" "${REDIS_PORT}")
+          ARGS+=("--requirepass" "${REDIS_PASSWORD}")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/redis.conf")
+          ARGS+=("--include" "/opt/bitnami/redis/etc/master.conf")
+          /run.sh ${ARGS[@]}
+        env:
+        - name: REDIS_REPLICATION_MODE
+          value: master
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: production-values.yaml-redis
+              key: redis-password
+        - name: REDIS_PORT
+          value: "6379"
+        ports:
+        - name: redis
+          containerPort: 6379
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+        readinessProbe:
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 5
+          exec:
+            command:
+            - sh
+            - -c
+            - /health/ping_local.sh 5
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi
+          requests:
+            cpu: 0.1
+            memory: 256Mi
+        volumeMounts:
+        - name: health
+          mountPath: /health
+        - name: redis-data
+          mountPath: /bitnami/redis/data
+          subPath: 
+        - name: config
+          mountPath: /opt/bitnami/redis/etc
+      initContainers:
+      - name: init-sysctl
+        image: docker.io/bitnami/minideb:latest
+        resources:
+          {}
+        volumeMounts:
+        - name: host-sys
+          mountPath: /host-sys
+        command:
+          - /bin/sh
+          - -c
+          - echo "sample command"
+        securityContext:
+          privileged: true
+          runAsUser: 0
+      volumes:
+      - name: health
+        configMap:
+          name: production-values.yaml-redis-health
+          defaultMode: 0755
+      - name: config
+        configMap:
+          name: production-values.yaml-redis
+      - name: host-sys
+        hostPath:
+          path: /sys
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app: "redis"
+          component: "master"
+          release: "production-values.yaml"
+          heritage: "Helm"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "8Gi"
+        storageClassName: "silver"
+  updateStrategy:
+    type: RollingUpdate
+---
+# Source: redis/templates/networkpolicy.yaml
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: "production-values.yaml-redis"
+  labels:
+    app: redis
+    chart: redis-6.1.1
+    release: "production-values.yaml"
+    heritage: "Helm"
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+      release: "production-values.yaml"
+  ingress:
+    # Allow inbound connections
+    - ports:
+      - port: 6379
+      from:
+        - podSelector:
+            matchLabels:
+              production-values.yaml-redis-client: "true"
+        - podSelector:
+            matchLabels:
+              release: "production-values.yaml"
+              role: metrics
+              app: redis
+    # Allow prometheus scrapes for metrics
+    - ports:
+      - port: 9121
+---
+# Source: redis/autogen-releaseconfig.json.transwarp-jsonnet.yaml
+apiVersion: apiextensions.transwarp.io/v1beta1
+kind: ReleaseConfig
+metadata:
+  creationTimestamp: null
+  labels:
+    auto-gen: "true"
+  name: production-values.yaml
+  namespace: ci-test
+spec:
+  chartAppVersion: 4.0.12
+  chartImage: ""
+  chartName: redis
+  chartVersion: 6.1.1
+  configValues:
+    cluster:
+      enabled: true
+      slaveCount: 3
+    configmap: '# maxmemory-policy volatile-lru'
+    image:
+      pullPolicy: IfNotPresent
+      registry: docker.io
+      repository: bitnami/redis
+      tag: 4.0.11
+    master:
+      affinity: {}
+      disableCommands:
+      - FLUSHDB
+      - FLUSHALL
+      extraFlags: []
+      livenessProbe:
+        enabled: true
+        failureThreshold: 5
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 5
+      persistence:
+        accessModes:
+        - ReadWriteOnce
+        enabled: true
+        path: /bitnami/redis/data
+        size: 8Gi
+        subPath: ""
+      podAnnotations: {}
+      podLabels: {}
+      port: 6379
+      readinessProbe:
+        enabled: true
+        failureThreshold: 5
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 1
+      securityContext:
+        enabled: true
+        fsGroup: 1001
+        runAsUser: 1001
+      service:
+        annotations: {}
+        loadBalancerIP: null
+        port: 6379
+        type: ClusterIP
+      statefulset:
+        updateStrategy: RollingUpdate
+    metrics:
+      enabled: true
+      image:
+        pullPolicy: IfNotPresent
+        registry: docker.io
+        repository: oliver006/redis_exporter
+        tag: v0.28.0
+      service:
+        annotations:
+          prometheus.io/port: "9121"
+          prometheus.io/scrape: "true"
+        type: ClusterIP
+    networkPolicy:
+      enabled: true
+    password: null
+    persistence: {}
+    rbac:
+      create: false
+      role:
+        rules: []
+    serviceAccount:
+      create: false
+      name: null
+    slave:
+      affinity: {}
+      service:
+        annotations: {}
+        loadBalancerIP: null
+        type: ClusterIP
+    sysctlImage:
+      command:
+      - /bin/sh
+      - -c
+      - echo "sample command"
+      enabled: true
+      mountHostSys: true
+    usePassword: true
+    volumePermissions:
+      image:
+        pullPolicy: IfNotPresent
+        registry: docker.io
+        repository: bitnami/minideb
+        tag: latest
+  dependencies: {}
+  dependenciesConfigValues: {}
+  outputConfig: {}
+  repo: ""
+status: {}

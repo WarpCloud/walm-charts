@@ -1,0 +1,25 @@
+{{- $KRB5_SERVERS := split (getv "/guardian/kdc_server_addresses") "," }}
+[logging]
+admin_server=FILE:/var/log/kadmind.log
+default=FILE:/var/log/krb5libs.log
+kdc=FILE:/var/log/krb5kdc.log
+
+[libdefaults]
+default_realm={{ getv "/security/guardian_client_config/realm" "TDH" }}
+dns_lookup_kdc=false
+dns_lookup_realm=false
+forwardable=true
+renew_lifetime=7d
+ticket_lifetime=24h
+udp_preference_limit=1
+
+[realms]
+{{ getv "/security/guardian_client_config/realm" "TDH" }} = {
+{{- range $index, $element := $KRB5_SERVERS }}
+  kdc={{ $element }}:
+{{- end }}
+}
+
+[domain_realm]
+{{ getv "/guardian/domain_realm" "transwarp.local" }} = {{ getv "/security/guardian_client_config/realm" "TDH" }}
+.{{ getv "/guardian/domain_realm" "transwarp.local" }} = {{ getv "/security/guardian_client_config/realm" "TDH" }}

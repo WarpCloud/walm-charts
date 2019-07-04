@@ -1,0 +1,43 @@
+friendlyName: Redis
+
+categories:
+- 数据库
+
+roles:
+- name: redis
+  description: "redis"
+  type: "container"
+  baseConfig:
+    image:
+      description: 镜像
+      mapKey: image.image
+      required: true
+      type: string
+    useHostNetwork:
+      description: 是否使用主机网络
+      mapKey: master.hostNetwork
+      required: false
+      type: boolean
+  resources:
+    limitsCpu:
+      mapKey: master.resources.limits.cpu
+    limitsMemory:
+      mapKey: master.resources.limits.memory
+    requestsCpu:
+      mapKey: master.resources.requests.cpu
+    requestsMemory:
+      mapKey: master.resources.requests.memory
+  healthChecks:
+    readinessProbe:
+      defined: false
+      enable: false
+    livenessProbe:
+      defined: false
+      enable: false
+
+params:
+- name: password
+  mapKey: password
+  description: "redis密码"
+  type: string
+  required: true

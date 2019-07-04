@@ -1,0 +1,34 @@
+[[template]]
+src = "consumer.properties.tmpl"
+dest = "/etc/kafka/conf/consumer.properties"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "producer.properties.tmpl"
+dest = "/etc/kafka/conf/producer.properties"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "jaas.conf.tmpl"
+dest = "/etc/kafka/conf/jaas.conf"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "kafka-env.sh.tmpl"
+dest = "/etc/kafka/conf/kafka-env.sh"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]
+
+[[template]]
+src = "server.properties.tmpl"
+dest = "/etc/kafka/conf/server.properties"
+check_cmd = "/bin/true"
+reload_cmd = "/bin/true"
+keys = [ "/" ]

@@ -1,0 +1,40 @@
+advanceConfig:
+  zoo_cfg:
+    autopurge.purgeInterval: 5
+    autopurge.snapRetainCount: 10
+    initLimit: 10
+    maxClientCnxns: 0
+    syncLimit: 5
+    tickTime: 9000
+  zookeeper:
+    zookeeper.client.port: 2181
+    zookeeper.jmxremote.port: 9911
+    zookeeper.leader.elect.port: 3888
+    zookeeper.peer.communicate.port: 2888
+appConfig:
+  zookeeper:
+    env_list: []
+    image: docker.io/corndai1997/zookeeper:5.2
+    priority: 0
+    replicas: 3
+    resources:
+      cpu_limit: 2
+      cpu_request: 0.5
+      memory_limit: 4Gi
+      memory_request: 1Gi
+      storage:
+        data:
+          accessMode: ReadWriteOnce
+          limit: {}
+          size: 100Gi
+          storageClass: silver
+    use_host_network: false
+transwarpConfig:
+  transwarpApplicationPause: false
+  transwarpCniNetwork: overlay
+  transwarpGlobalIngress:
+    httpPort: 80
+    httpsPort: 443
+  transwarpLicenseAddress: ""
+  transwarpMetrics:
+    enable: true
