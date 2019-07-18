@@ -1,7 +1,7 @@
 image:
-  image: transwarp/bitnami/redis:4.0.12
+  image: docker.io/library/redis:4.0.12
   registry: docker.io
-  repository: bitnami/redis
+  repository: library/redis
   tag: 4.0.12
   pullPolicy: Always
 
