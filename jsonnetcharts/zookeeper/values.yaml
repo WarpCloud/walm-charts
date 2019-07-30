@@ -14,7 +14,7 @@ advanceConfig:
 appConfig:
   zookeeper:
     env_list: []
-    image: docker.io/corndai1997/zookeeper:5.2
+    image: docker.io/warpcloud/zookeeper:5.2
     priority: 0
     replicas: 3
     resources:

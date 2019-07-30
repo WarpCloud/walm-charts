@@ -22,7 +22,7 @@ advanceConfig:
 appConfig:
   kafka:
     env_list: []
-    image: docker.io/corndai1997/kafka:6.0
+    image: docker.io/warpcloud/kafka:6.0
     priority: 0
     replicas: 3
     resources:

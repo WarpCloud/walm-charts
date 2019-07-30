@@ -1,5 +1,5 @@
 image:
-  repository: docker.io/corndai1997/walm
+  repository: docker.io/warpcloud/walm
   tag: dev
   pullPolicy: Always
 resources:
@@ -14,7 +14,6 @@ annotations:
   cni.networks: overlay
 
 dnsPolicy: ClusterFirst
-priorityClassName: low-priority
 restartPolicy: Always
 schedulerName: default-scheduler
 
@@ -44,7 +43,7 @@ configmap:
     kubeConfig: {}
     repoList:
     - name: stable
-      url: http://10.10.10.2:18181/
+      url: https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
     serverConfig:
       port: 9001
       readTimeout: 0
